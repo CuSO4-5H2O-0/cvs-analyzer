@@ -529,10 +529,8 @@ def plot_malt(results, output_path=None):
     绘制 MALT 图（标准加入法线性图）。
     每个 block 一条线，显示 R vs C_eff 的拟合。
     """
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5.5))
+    fig, ax = plt.subplots(1, 1, figsize=(8, 5.5))
 
-    # 左图：各 block 的标曲
-    ax1 = axes[0]
     individual_results = [r for r in results if r['block'] != 'All']
     pooled_results = [r for r in results if r['block'] == 'All']
     colors = plt.cm.tab10(np.linspace(0, 1, len(individual_results)))
@@ -541,20 +539,20 @@ def plot_malt(results, output_path=None):
         C = np.array([p['C_eff'] for p in r['points']])
         R_data = np.array([p['R'] for p in r['points']])
 
-        ax1.scatter(C, R_data, color=colors[i], s=60, zorder=5, label=f'Block {r["block"]}')
+        ax.scatter(C, R_data, color=colors[i], s=60, zorder=5, label=f'Block {r["block"]}')
 
         # 拟合线
         C_fit = np.linspace(min(C.min(), r['C_sample_eff'] - 0.5),
                             max(C.max(), 0), 100)
         R_fit = r['slope'] * C_fit + r['intercept']
-        ax1.plot(C_fit, R_fit, '--', color=colors[i], alpha=0.5, linewidth=1.2)
+        ax.plot(C_fit, R_fit, '--', color=colors[i], alpha=0.5, linewidth=1.2)
 
         # 标注 x 截距
-        ax1.axvline(x=r['C_sample_eff'], color=colors[i], linestyle=':',
+        ax.axvline(x=r['C_sample_eff'], color=colors[i], linestyle=':',
                     alpha=0.3, linewidth=0.8)
 
         # 在数据旁标注 R²
-        ax1.annotate(f'R²={r["r_squared"]:.3f}',
+        ax.annotate(f'R²={r["r_squared"]:.3f}',
                      xy=(C.max(), R_data[-1]),
                      xytext=(C.max() * 0.6, R_data[-1] * 0.5 + R_data[0] * 0.5),
                      fontsize=11, color=colors[i],
@@ -563,49 +561,32 @@ def plot_malt(results, output_path=None):
     # 聚合拟合线（加粗黑线）
     for r in pooled_results:
         C_all = np.array([p['C_eff'] for p in r['points']])
-        ax1.scatter(C_all, [p['R'] for p in r['points']],
+        ax.scatter(C_all, [p['R'] for p in r['points']],
                    color='black', s=15, zorder=4, alpha=0.4, label='_nolegend_')
         C_fit = np.linspace(min(C_all.min(), r['C_sample_eff'] - 0.5),
                             max(C_all.max(), 0), 100)
         R_fit = r['slope'] * C_fit + r['intercept']
-        ax1.plot(C_fit, R_fit, '-', color='black', linewidth=2.5, alpha=0.8,
+        ax.plot(C_fit, R_fit, '-', color='black', linewidth=2.5, alpha=0.8,
                 label=f"Pooled (C$_x$={r['C_x']:.2f})")
-        ax1.axvline(x=r['C_sample_eff'], color='black', linestyle='--',
+        ax.axvline(x=r['C_sample_eff'], color='black', linestyle='--',
                     alpha=0.6, linewidth=1)
-        ax1.annotate(f'C$_x$={r["C_x"]:.2f}',
+        ax.annotate(f'C$_x$={r["C_x"]:.2f}',
                      xy=(r['C_sample_eff'], 0),
                      xytext=(r['C_sample_eff'] - 0.25, max(C_all)*0.05),
                      fontsize=12, color='black',
                      arrowprops=dict(arrowstyle='->', color='black'))
         # 标注 R²
-        ax1.text(0.95, 0.05, f'Pooled R²={r["r_squared"]:.3f}',
-                 transform=ax1.transAxes, fontsize=12,
+        ax.text(0.95, 0.05, f'Pooled R²={r["r_squared"]:.3f}',
+                 transform=ax.transAxes, fontsize=12,
                  verticalalignment='bottom', horizontalalignment='right',
                  bbox=dict(boxstyle='round,pad=0.3', facecolor='wheat', alpha=0.7))
 
-    ax1.axhline(y=0, color='gray', linestyle='-', alpha=0.3)
-    ax1.set_xlabel('Effective concentration C_eff (std addition)')
-    ax1.set_ylabel('Response R = A0 - A')
-    ax1.set_title('Standard Addition Calibration Curve')
-    ax1.legend(fontsize=10)
-    ax1.grid(True, alpha=0.3)
-
-    # 右图：各添加点的溶出峰面积
-    ax2 = axes[1]
-    for i, r in enumerate(individual_results):
-        V = np.array([p['V_std'] for p in r['points']])
-        A = np.array([p['discharge_area'] for p in r['points']])
-
-        ax2.scatter(V, A, color=colors[i], s=60, zorder=5, label=f'Block {r["block"]}')
-        ax2.plot(V, A, '-o', color=colors[i], alpha=0.5, markersize=5)
-
-    if individual_results:
-        ax2.axhline(y=individual_results[0].get('A0', 0), color='gray', linestyle='--', alpha=0.5, label='Blank A0')
-    ax2.set_xlabel('Standard addition volume (uL)')
-    ax2.set_ylabel('Stripping peak area')
-    ax2.set_title('Stripping Area vs Addition')
-    ax2.legend(fontsize=10)
-    ax2.grid(True, alpha=0.3)
+    ax.axhline(y=0, color='gray', linestyle='-', alpha=0.3)
+    ax.set_xlabel('Effective concentration C_eff (std addition)')
+    ax.set_ylabel('Response R = A0 - A')
+    ax.set_title('Standard Addition Calibration Curve')
+    ax.legend(fontsize=10)
+    ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
     if output_path:
@@ -615,63 +596,44 @@ def plot_malt(results, output_path=None):
 
 def plot_individual_malt(result, output_path=None):
     """
-    绘制单个 block 的 MALT 图（标准加入法线性图）。
-    左图：R vs C_eff 拟合；右图：峰面积 vs 添加体积。
+    绘制单个 block 的 MALT 标曲图（标准加入法线性拟合）。
     """
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5.5))
+    fig, ax = plt.subplots(1, 1, figsize=(8, 5.5))
 
-    # 左图：标曲
-    ax1 = axes[0]
     C = np.array([p['C_eff'] for p in result['points']])
     R_data = np.array([p['R'] for p in result['points']])
 
-    ax1.scatter(C, R_data, color='#2196F3', s=60, zorder=5, label='Data points')
+    ax.scatter(C, R_data, color='#2196F3', s=60, zorder=5, label='Data points')
 
     # 拟合线
     C_fit = np.linspace(min(C.min(), result['C_sample_eff'] - 0.5),
                         max(C.max(), 0), 100)
     R_fit = result['slope'] * C_fit + result['intercept']
-    ax1.plot(C_fit, R_fit, '-', color='#FF5722', linewidth=2, alpha=0.8,
+    ax.plot(C_fit, R_fit, '-', color='#FF5722', linewidth=2, alpha=0.8,
              label=f"Fit: R={result['slope']:.4f}C+({result['intercept']:.4f})")
 
     # x 截距
-    ax1.axvline(x=result['C_sample_eff'], color='#FF5722', linestyle='--',
+    ax.axvline(x=result['C_sample_eff'], color='#FF5722', linestyle='--',
                 alpha=0.5, linewidth=1)
-    ax1.annotate(f'C$_x$={result["C_x"]:.2f}',
+    ax.annotate(f'C$_x$={result["C_x"]:.2f}',
                  xy=(result['C_sample_eff'], 0),
                  xytext=(result['C_sample_eff'] - 0.35, max(R_data) * 0.7),
                  fontsize=13, color='#FF5722',
                  arrowprops=dict(arrowstyle='->', color='#FF5722'))
 
     # R² 标注（右下角，避免遮盖数据点）
-    ax1.text(0.95, 0.05, f'R² = {result["r_squared"]:.4f}',
-             transform=ax1.transAxes, fontsize=14,
+    ax.text(0.95, 0.05, f'R² = {result["r_squared"]:.4f}',
+             transform=ax.transAxes, fontsize=14,
              verticalalignment='bottom', horizontalalignment='right',
              bbox=dict(boxstyle='round,pad=0.3', facecolor='wheat', alpha=0.8))
 
     # 空白基线
-    ax1.axhline(y=0, color='gray', linestyle='-', alpha=0.3)
-    ax1.set_xlabel('Effective concentration C_eff')
-    ax1.set_ylabel('Response R = A0 - A')
-    ax1.set_title(f'Block {result["block"]} — Standard Addition')
-    ax1.legend(fontsize=11)
-    ax1.grid(True, alpha=0.3)
-
-    # 右图：峰面积 vs 添加体积
-    ax2 = axes[1]
-    V = np.array([p['V_std'] for p in result['points']])
-    A = np.array([p['discharge_area'] for p in result['points']])
-
-    ax2.scatter(V, A, color='#4CAF50', s=70, zorder=5, label='Stripping area')
-    ax2.plot(V, A, '-o', color='#4CAF50', alpha=0.6, markersize=7)
-    ax2.axhline(y=result.get('A0', 0), color='gray', linestyle='--',
-                alpha=0.5, label=f"Blank A0={result.get('A0',0):.4f}")
-
-    ax2.set_xlabel('Standard addition volume (uL)')
-    ax2.set_ylabel('Stripping peak area')
-    ax2.set_title(f'Block {result["block"]} — Area vs Addition')
-    ax2.legend(fontsize=11)
-    ax2.grid(True, alpha=0.3)
+    ax.axhline(y=0, color='gray', linestyle='-', alpha=0.3)
+    ax.set_xlabel('Effective concentration C_eff')
+    ax.set_ylabel('Response R = A0 - A')
+    ax.set_title(f'Block {result["block"]} — Standard Addition')
+    ax.legend(fontsize=11)
+    ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
     if output_path:
