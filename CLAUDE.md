@@ -28,7 +28,7 @@ python analyze_cvs.py
 
 ### 数据解析（`parse_filename`, `read_cv_data`）
 - 文件名格式：`CV_{P1}-{P2}-{P3}-{P4}-{P5}-{P6}_{扫速}_{转速}_{日期}.txt`
-- 泵定义：P1=VMS(活化), P2=底液, P3=待测液, P4=标准液L(整平剂), P5=促进剂, P6=抑制剂
+- 泵定义：P1=VMS(仅活化电极，不参与测试), P2=底液(体积可能变化), P3=待测液(体积可能变化), P4=标准液L(整平剂), P5=促进剂, P6=抑制剂
 - 数据文件跳过前 5 行表头，每行 `电位 电流`
 
 ### 循环检测与积分（`detect_cycles`, `integrate_stripping`, `integrate_deposition`）
@@ -41,11 +41,11 @@ python analyze_cvs.py
 - 响应值 R = A₀ - A，线性拟合 R vs C_eff，x 截距得待测液浓度
 - 聚合分析（pooled）：所有 block 数据点统一拟合
 
-### 输出（`export_csv`, `plot_malt`, `plot_individual_malt`, `print_results_table`）
+### 输出（`export_csv`, `plot_mlat`, `plot_individual_mlat`, `print_results_table`）
 - 终端结果表 + 各点峰面积详情
 - `计算结果.csv` — 包含各点数据和拟合汇总
-- `MALT_plot.png` — 所有 block 叠加的标曲图（R vs C_eff）
-- `MALT_plot_BlockN.png` — 每个 block 的单独标曲图
+- `MLAT_plot.png` — 所有 block 叠加的标曲图（R vs C_eff）
+- `MLAT_plot_BlockN.png` — 每个 block 的单独标曲图
 
 ### 关键依赖
 - `numpy` — 数值计算

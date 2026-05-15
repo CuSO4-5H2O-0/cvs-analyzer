@@ -15,9 +15,9 @@ CVS 整平剂浓度自动计算脚本
 - 沉积区（充电）：负扫开始明显下降 → 正扫至电流0结束（取溶出峰后过零点）
 
 泵定义：
-- 泵1: VMS（活化用）
-- 泵2: 测试底液
-- 泵3: 待测液（未知浓度，体积 V_TEST）
+- 泵1: VMS（仅用于活化电极，不参与整平剂浓度测试）
+- 泵2: 测试底液（体积 V_BASE，可能变化）
+- 泵3: 待测液（未知浓度，体积 V_TEST，可能变化）
 - 泵4: 标准添加液L（整平剂，已知浓度 C_STD）
 - 泵5: 纯A（促进剂）
 - 泵6: 纯S（抑制剂）
@@ -27,7 +27,7 @@ CVS 整平剂浓度自动计算脚本
 
 输出：
   - 终端打印结果表和浓度
-  - MALT_plot.png 标准加入法线性图
+  - MLAT_plot.png 标准加入法线性图
 
 响应类型（通过 RESPONSE_TYPE 配置）：
   - 'stripping': 使用溶出峰（放电）面积差（默认）
@@ -253,7 +253,7 @@ def group_by_block(files_info):
             if current_block:
                 blocks.append(current_block)
             current_block = [f]
-        elif p[1] == 5000:  # 测试序列
+        else:  # 非VMS文件均属于测试序列（泵2、泵3加液量可变）
             current_block.append(f)
     if current_block:
         blocks.append(current_block)
@@ -339,8 +339,8 @@ def analyze_folder(folder_path):
         # 用最后一个空白（最接近样品测量的）
         baseline = baselines[-1]
 
-        # 找样品 + 标准添加（P3=5000）
-        samples = [f for f in block if f['pumps'][2] == 5000]
+        # 找样品 + 标准添加（P3>0）
+        samples = [f for f in block if f['pumps'][2] > 0]
         # 按 P4（标准添加量）排序
         samples.sort(key=lambda x: x['pumps'][3])
 
@@ -524,12 +524,12 @@ def export_csv(results, output_path):
 # 绘图
 # ============================================================
 
-def plot_malt(results, output_path=None):
+def plot_mlat(results, output_path=None):
     """
-    绘制 MALT 图（标准加入法线性图）。
+    绘制 MLAT 图（标准加入法线性图）。
     每个 block 一条线，显示 R vs C_eff 的拟合。
     """
-    fig, ax = plt.subplots(1, 1, figsize=(8, 5.5))
+    fig, ax = plt.subplots(1, 1, figsize=(9, 6))
 
     individual_results = [r for r in results if r['block'] != 'All']
     pooled_results = [r for r in results if r['block'] == 'All']
@@ -588,17 +588,17 @@ def plot_malt(results, output_path=None):
     ax.legend(fontsize=10)
     ax.grid(True, alpha=0.3)
 
-    plt.tight_layout()
+    plt.subplots_adjust(left=0.10, right=0.95, top=0.92, bottom=0.12)
     if output_path:
-        plt.savefig(output_path, dpi=200, bbox_inches='tight')
-        print(f"\nMALT plot saved: {output_path}")
+        plt.savefig(output_path, dpi=200)
+        print(f"\nMLAT plot saved: {output_path}")
 
 
-def plot_individual_malt(result, output_path=None):
+def plot_individual_mlat(result, output_path=None):
     """
-    绘制单个 block 的 MALT 标曲图（标准加入法线性拟合）。
+    绘制单个 block 的 MLAT 标曲图（标准加入法线性拟合）。
     """
-    fig, ax = plt.subplots(1, 1, figsize=(8, 5.5))
+    fig, ax = plt.subplots(1, 1, figsize=(9, 6))
 
     C = np.array([p['C_eff'] for p in result['points']])
     R_data = np.array([p['R'] for p in result['points']])
@@ -635,10 +635,10 @@ def plot_individual_malt(result, output_path=None):
     ax.legend(fontsize=11)
     ax.grid(True, alpha=0.3)
 
-    plt.tight_layout()
+    plt.subplots_adjust(left=0.10, right=0.95, top=0.92, bottom=0.12)
     if output_path:
-        plt.savefig(output_path, dpi=200, bbox_inches='tight')
-        print(f"Individual MALT plot saved: {output_path}")
+        plt.savefig(output_path, dpi=200)
+        print(f"Individual MLAT plot saved: {output_path}")
 
 
 # ============================================================
@@ -720,7 +720,7 @@ if __name__ == '__main__':
         sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
     # 默认路径
-    default_path = r'D:\文档\科研\实验数据\2026\5\14-box-12-23-STD-0.2\txt_box'
+    default_path = r'D:\文档\Python Documents\2026\Cu\5#\26-05\box\txt_box'
 
     # 在 Jupyter/IPython 环境中 sys.argv 可能包含内核参数，过滤掉
     import glob
@@ -750,16 +750,16 @@ if __name__ == '__main__':
     csv_path = os.path.join(os.path.dirname(folder), '计算结果.csv')
     export_csv(results, csv_path)
 
-    # 绘制 MALT 图
-    plot_path = os.path.join(os.path.dirname(folder), 'MALT_plot.png')
-    plot_malt(results, plot_path)
+    # 绘制 MLAT 图
+    plot_path = os.path.join(os.path.dirname(folder), 'MLAT_plot.png')
+    plot_mlat(results, plot_path)
 
-    # 绘制每个 block 的单独 MALT 图
+    # 绘制每个 block 的单独 MLAT 图
     parent_dir = os.path.dirname(folder)
     for r in results:
         if r['block'] == 'All':
             continue
-        individual_path = os.path.join(parent_dir, f'MALT_plot_Block{r["block"]}.png')
-        plot_individual_malt(r, individual_path)
+        individual_path = os.path.join(parent_dir, f'MLAT_plot_Block{r["block"]}.png')
+        plot_individual_mlat(r, individual_path)
 
     print("\n分析完成!")
